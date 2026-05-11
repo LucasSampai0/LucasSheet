@@ -24,7 +24,8 @@ new class extends Component
     public bool $finishPrevious = false;
     public ?string $warning = null;
 
-    public ?string $filter_date = null;
+    public ?string $filter_start_date = null;
+    public ?string $filter_end_date = null;
     public ?int $filter_client_id = null;
     public ?int $filter_project_id = null;
     public ?int $filter_category_id = null;
@@ -32,7 +33,8 @@ new class extends Component
     public function mount(): void
     {
         $this->resetForm();
-        $this->filter_date = now()->toDateString();
+        $this->filter_start_date = now()->toDateString();
+        $this->filter_end_date = now()->toDateString();
     }
 
     protected function rules(): array
@@ -158,8 +160,11 @@ new class extends Component
 
     public function records()
     {
+        [$startDate, $endDate] = $this->normalizedFilterPeriod();
+
         return app(ReportService::class)->filteredQuery([
-            'date' => $this->filter_date,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'client_id' => $this->filter_client_id,
             'project_id' => $this->filter_project_id,
             'category_id' => $this->filter_category_id,
@@ -168,6 +173,15 @@ new class extends Component
             ->latest('started_at')
             ->limit(80)
             ->get();
+    }
+
+    private function normalizedFilterPeriod(): array
+    {
+        if ($this->filter_start_date && $this->filter_end_date && $this->filter_start_date > $this->filter_end_date) {
+            return [$this->filter_end_date, $this->filter_start_date];
+        }
+
+        return [$this->filter_start_date, $this->filter_end_date];
     }
 
     public function clients()
@@ -290,26 +304,42 @@ new class extends Component
     </form>
 
     <div class="rounded-lg border border-zinc-200 bg-white p-5">
-        <div class="grid gap-3 md:grid-cols-4">
-            <input type="date" wire:model.live="filter_date" class="rounded border border-zinc-300 px-3 py-2 text-sm">
-            <select wire:model.live="filter_client_id" class="rounded border border-zinc-300 px-3 py-2 text-sm">
-                <option value="">Todos os clientes</option>
-                @foreach ($this->clients() as $client)
-                    <option value="{{ $client->id }}">{{ $client->name }}</option>
-                @endforeach
-            </select>
-            <select wire:model.live="filter_project_id" class="rounded border border-zinc-300 px-3 py-2 text-sm">
-                <option value="">Todos os projetos</option>
-                @foreach ($this->filterProjects() as $project)
-                    <option value="{{ $project->id }}">{{ $project->name }}</option>
-                @endforeach
-            </select>
-            <select wire:model.live="filter_category_id" class="rounded border border-zinc-300 px-3 py-2 text-sm">
-                <option value="">Todas as categorias</option>
-                @foreach ($this->categories() as $category)
-                    <option value="{{ $category->id }}">{{ $category->name }}</option>
-                @endforeach
-            </select>
+        <div class="grid gap-3 md:grid-cols-5">
+            <label class="block">
+                <span class="text-xs font-medium uppercase text-zinc-500">Data inicial</span>
+                <input type="date" wire:model.live="filter_start_date" class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="text-xs font-medium uppercase text-zinc-500">Data final</span>
+                <input type="date" wire:model.live="filter_end_date" class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="text-xs font-medium uppercase text-zinc-500">Cliente</span>
+                <select wire:model.live="filter_client_id" class="mt-1 rounded border border-zinc-300 px-3 py-2 text-sm">
+                    <option value="">Todos os clientes</option>
+                    @foreach ($this->clients() as $client)
+                        <option value="{{ $client->id }}">{{ $client->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label class="block">
+                <span class="text-xs font-medium uppercase text-zinc-500">Projeto</span>
+                <select wire:model.live="filter_project_id" class="mt-1 rounded border border-zinc-300 px-3 py-2 text-sm">
+                    <option value="">Todos os projetos</option>
+                    @foreach ($this->filterProjects() as $project)
+                        <option value="{{ $project->id }}">{{ $project->name }}</option>
+                    @endforeach
+                </select>
+            </label>
+            <label class="block">
+                <span class="text-xs font-medium uppercase text-zinc-500">Categoria</span>
+                <select wire:model.live="filter_category_id" class="mt-1 rounded border border-zinc-300 px-3 py-2 text-sm">
+                    <option value="">Todas as categorias</option>
+                    @foreach ($this->categories() as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
+            </label>
         </div>
     </div>
 
