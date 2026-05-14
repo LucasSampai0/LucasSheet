@@ -9,6 +9,72 @@ const closeAllCustomSelects = (except = null) => {
     });
 };
 
+const closeAllActionMenus = (except = null) => {
+    document.querySelectorAll('[data-action-menu].is-open').forEach((menu) => {
+        if (menu !== except) {
+            menu.classList.remove('is-open');
+            menu.querySelector('[data-action-menu-trigger]')?.setAttribute('aria-expanded', 'false');
+        }
+    });
+};
+
+const positionActionMenu = (menu) => {
+    const trigger = menu.querySelector('[data-action-menu-trigger]');
+    const panel = menu.querySelector('[data-action-menu-panel]');
+
+    if (! trigger || ! panel || ! menu.classList.contains('is-open')) {
+        return;
+    }
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const gap = 8;
+    const margin = 12;
+
+    const left = Math.min(
+        window.innerWidth - panelRect.width - margin,
+        Math.max(margin, triggerRect.right - panelRect.width),
+    );
+
+    let top = triggerRect.bottom + gap;
+
+    if (top + panelRect.height > window.innerHeight - margin) {
+        top = Math.max(margin, triggerRect.top - panelRect.height - gap);
+    }
+
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+};
+
+const positionOpenActionMenus = () => {
+    document.querySelectorAll('[data-action-menu].is-open').forEach(positionActionMenu);
+};
+
+const callClosestLivewire = (element, method, ...args) => {
+    const component = element.closest('[wire\\:id]');
+    const livewire = window.Livewire || window.livewire;
+
+    if (! component || ! livewire) {
+        return;
+    }
+
+    const instance = livewire.find(component.getAttribute('wire:id'));
+
+    if (typeof instance?.call === 'function') {
+        instance.call(method, ...args);
+        return;
+    }
+
+    if (typeof instance?.$wire?.[method] === 'function') {
+        instance.$wire[method](...args);
+        return;
+    }
+
+    if (typeof instance?.$wire?.call === 'function') {
+        instance.$wire.call(method, ...args);
+    }
+};
+
 const optionLabel = (option) => option?.textContent?.trim() || 'Selecione';
 
 const customSelectId = (select) => {
@@ -38,7 +104,15 @@ const renderCustomSelect = (select) => {
     const selected = select.selectedOptions[0] || select.options[0];
 
     valueLabel.textContent = optionLabel(selected);
+    trigger.disabled = select.disabled;
     trigger.classList.toggle('is-placeholder', ! selected?.value);
+    wrapper.classList.toggle('is-disabled', select.disabled);
+
+    if (select.disabled) {
+        wrapper.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+    }
+
     menu.innerHTML = '';
 
     Array.from(select.options).forEach((option, index) => {
@@ -125,6 +199,10 @@ const enhanceSelect = (select) => {
     select.setAttribute('aria-hidden', 'true');
 
     trigger.addEventListener('click', () => {
+        if (select.disabled) {
+            return;
+        }
+
         const willOpen = ! wrapper.classList.contains('is-open');
 
         closeAllCustomSelects(wrapper);
@@ -138,6 +216,10 @@ const enhanceSelect = (select) => {
     });
 
     trigger.addEventListener('keydown', (event) => {
+        if (select.disabled) {
+            return;
+        }
+
         if (['ArrowDown', 'Enter', ' '].includes(event.key)) {
             event.preventDefault();
             wrapper.classList.add('is-open');
@@ -186,22 +268,210 @@ const refreshCustomSelects = () => {
     enhanceCustomSelects();
 };
 
+const applyTheme = (theme = localStorage.getItem('theme') || 'dark') => {
+    const isDark = theme === 'dark';
+
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('light', ! isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+    document.querySelectorAll('[data-theme-label]').forEach((label) => {
+        label.textContent = isDark ? 'Modo escuro' : 'Modo claro';
+    });
+};
+
+const toggleTheme = () => {
+    applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+};
+
+const dashboardWidgetsKey = 'lucassheet.hiddenDashboardWidgets';
+
+const getHiddenDashboardWidgets = () => {
+    try {
+        return new Set(JSON.parse(localStorage.getItem(dashboardWidgetsKey) || '[]'));
+    } catch {
+        return new Set();
+    }
+};
+
+const storeHiddenDashboardWidgets = (widgets) => {
+    localStorage.setItem(dashboardWidgetsKey, JSON.stringify(Array.from(widgets)));
+};
+
+const applyDashboardWidgets = () => {
+    const hiddenWidgets = getHiddenDashboardWidgets();
+    const controls = document.querySelector('[data-dashboard-hidden-controls]');
+    let hasHiddenWidget = false;
+
+    document.querySelectorAll('[data-dashboard-widget]').forEach((widget) => {
+        const isHidden = hiddenWidgets.has(widget.dataset.dashboardWidget);
+        widget.classList.toggle('is-dashboard-hidden', isHidden);
+        hasHiddenWidget = hasHiddenWidget || isHidden;
+    });
+
+    document.querySelectorAll('[data-dashboard-restore]').forEach((button) => {
+        button.hidden = ! hiddenWidgets.has(button.dataset.dashboardRestore);
+    });
+
+    if (controls) {
+        controls.hidden = ! hasHiddenWidget;
+    }
+};
+
 document.addEventListener('click', (event) => {
+    const taskSummary = event.target.closest('.work-card-summary');
+
+    if (taskSummary?.closest('[data-task-card]')?.dataset.dragging === 'true') {
+        event.preventDefault();
+        return;
+    }
+
     if (! event.target.closest('[data-custom-select-wrapper]')) {
         closeAllCustomSelects();
     }
+
+    const actionMenuTrigger = event.target.closest('[data-action-menu-trigger]');
+    const actionMenuItem = event.target.closest('[data-action-menu-item]');
+
+    if (actionMenuTrigger) {
+        const menu = actionMenuTrigger.closest('[data-action-menu]');
+        const willOpen = ! menu.classList.contains('is-open');
+
+        closeAllActionMenus(menu);
+        menu.classList.toggle('is-open', willOpen);
+        actionMenuTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+        if (willOpen) {
+            requestAnimationFrame(() => positionActionMenu(menu));
+        }
+    } else if (! event.target.closest('[data-action-menu]')) {
+        closeAllActionMenus();
+    }
+
+    if (actionMenuItem) {
+        closeAllActionMenus();
+    }
+
+    if (event.target.closest('[data-theme-toggle]')) {
+        toggleTheme();
+    }
+
+    const hideButton = event.target.closest('[data-dashboard-hide]');
+    const restoreButton = event.target.closest('[data-dashboard-restore]');
+
+    if (hideButton) {
+        const hiddenWidgets = getHiddenDashboardWidgets();
+        hiddenWidgets.add(hideButton.dataset.dashboardHide);
+        storeHiddenDashboardWidgets(hiddenWidgets);
+        applyDashboardWidgets();
+    }
+
+    if (restoreButton) {
+        const hiddenWidgets = getHiddenDashboardWidgets();
+        hiddenWidgets.delete(restoreButton.dataset.dashboardRestore);
+        storeHiddenDashboardWidgets(hiddenWidgets);
+        applyDashboardWidgets();
+    }
+});
+
+document.addEventListener('dragstart', (event) => {
+    const card = event.target.closest('[data-task-card]');
+
+    if (! card) {
+        return;
+    }
+
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', card.dataset.taskId);
+    event.dataTransfer.setData('application/x-task-status', card.dataset.taskStatus || '');
+    card.dataset.dragging = 'true';
+    card.classList.add('is-dragging');
+});
+
+document.addEventListener('dragend', (event) => {
+    const card = event.target.closest('[data-task-card]');
+
+    if (card) {
+        card.classList.remove('is-dragging');
+        setTimeout(() => {
+            delete card.dataset.dragging;
+        }, 0);
+    }
+
+    document.querySelectorAll('[data-task-drop-status].is-drag-over').forEach((column) => {
+        column.classList.remove('is-drag-over');
+    });
+});
+
+document.addEventListener('dragover', (event) => {
+    const column = event.target.closest('[data-task-drop-status]');
+
+    if (! column) {
+        return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    column.classList.add('is-drag-over');
+});
+
+document.addEventListener('dragleave', (event) => {
+    const column = event.target.closest('[data-task-drop-status]');
+
+    if (! column || column.contains(event.relatedTarget)) {
+        return;
+    }
+
+    column.classList.remove('is-drag-over');
+});
+
+document.addEventListener('drop', (event) => {
+    const column = event.target.closest('[data-task-drop-status]');
+
+    if (! column) {
+        return;
+    }
+
+    event.preventDefault();
+    column.classList.remove('is-drag-over');
+
+    const taskId = event.dataTransfer.getData('text/plain');
+    const status = column.dataset.taskDropStatus;
+    const currentStatus = event.dataTransfer.getData('application/x-task-status');
+
+    if (! taskId || ! status || status === currentStatus) {
+        return;
+    }
+
+    callClosestLivewire(column, 'changeStatusFromBoard', Number(taskId), status);
 });
 
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         closeAllCustomSelects();
+        closeAllActionMenus();
     }
 });
 
-document.addEventListener('DOMContentLoaded', enhanceCustomSelects);
-document.addEventListener('livewire:navigated', refreshCustomSelects);
+window.addEventListener('resize', positionOpenActionMenus);
+window.addEventListener('scroll', positionOpenActionMenus, true);
+
+document.addEventListener('DOMContentLoaded', () => {
+    applyTheme();
+    enhanceCustomSelects();
+    applyDashboardWidgets();
+});
+document.addEventListener('livewire:navigated', () => {
+    applyTheme();
+    refreshCustomSelects();
+    applyDashboardWidgets();
+});
 document.addEventListener('livewire:init', () => {
-    Livewire.hook('morph.updated', refreshCustomSelects);
+    Livewire.hook('morph.updated', () => {
+        applyTheme();
+        refreshCustomSelects();
+        applyDashboardWidgets();
+    });
 });
 
 new MutationObserver(enhanceCustomSelects).observe(document.documentElement, {

@@ -96,7 +96,7 @@ new class extends Component
                             <span class="h-4 w-4 rounded" style="background: {{ $category->color }}"></span>
                             <h2 class="font-semibold">{{ $category->name }}</h2>
                         </div>
-                        <p class="mt-1 text-sm text-zinc-500">{{ $category->work_logs_count }} registros</p>
+                        <p class="mt-1 text-sm text-zinc-500">{{ $category->work_logs_count }} tarefas</p>
                     </div>
                     <span class="text-xs font-medium {{ $category->active ? 'text-emerald-700' : 'text-zinc-500' }}">{{ $category->active ? 'Ativa' : 'Inativa' }}</span>
                 </div>

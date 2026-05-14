@@ -2,6 +2,7 @@
     $classes = match ($status) {
         'finished' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
         'cancelled' => 'bg-rose-50 text-rose-700 ring-rose-600/20',
+        'paused' => 'bg-sky-50 text-sky-700 ring-sky-600/20',
         default => 'bg-amber-50 text-amber-700 ring-amber-600/20',
     };
 @endphp

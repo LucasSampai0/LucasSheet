@@ -7,14 +7,14 @@ use InvalidArgumentException;
 
 class WorkDuration
 {
-    public static function minutesBetween(string $date, string $startedAt, ?string $endedAt): int
+    public static function minutesBetween(string $date, string $startedAt, ?string $endedAt, ?string $endedDate = null): int
     {
         if (blank($endedAt)) {
             return 0;
         }
 
         $start = Carbon::parse($date.' '.$startedAt);
-        $end = Carbon::parse($date.' '.$endedAt);
+        $end = Carbon::parse(($endedDate ?: $date).' '.$endedAt);
 
         if ($end->lt($start)) {
             throw new InvalidArgumentException('O horario final nao pode ser menor que o horario inicial.');

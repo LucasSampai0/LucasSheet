@@ -96,7 +96,7 @@ new class extends Component
                         <th class="px-5 py-3">Cliente</th>
                         <th class="px-5 py-3">Descricao</th>
                         <th class="px-5 py-3">Projetos</th>
-                        <th class="px-5 py-3">Registros</th>
+                        <th class="px-5 py-3">Tarefas</th>
                         <th class="px-5 py-3">Status</th>
                         <th class="px-5 py-3"></th>
                     </tr>

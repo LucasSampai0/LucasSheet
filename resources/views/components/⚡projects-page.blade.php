@@ -69,7 +69,7 @@ new class extends Component
 <section class="space-y-6">
     <div>
         <h1 class="text-2xl font-semibold">Projetos</h1>
-        <p class="mt-1 text-sm text-zinc-500">Cada projeto pertence a um cliente e pode ser usado nos filtros dos registros.</p>
+        <p class="mt-1 text-sm text-zinc-500">Cada projeto pertence a um cliente e pode ser usado nos filtros das tarefas.</p>
     </div>
 
     <form wire:submit="save" class="rounded-lg border border-zinc-200 bg-white p-5">
@@ -114,7 +114,7 @@ new class extends Component
                         <th class="px-5 py-3">Projeto</th>
                         <th class="px-5 py-3">Cliente</th>
                         <th class="px-5 py-3">Descricao</th>
-                        <th class="px-5 py-3">Registros</th>
+                        <th class="px-5 py-3">Tarefas</th>
                         <th class="px-5 py-3">Status</th>
                         <th class="px-5 py-3"></th>
                     </tr>

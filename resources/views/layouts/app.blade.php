@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ config('app.name', 'LucasSheet') }}</title>
+        <script>
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.classList.add(savedTheme === 'light' ? 'light' : 'dark');
+        </script>
+        <style>
+            html, body { background: #111113; color: #f4f4f5; }
+            html.light, html.light body { background: #f7f7f8; color: #171717; }
+        </style>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
     </head>
@@ -23,7 +31,7 @@
                             ['clients', 'Clientes', '/clientes'],
                             ['projects', 'Projetos', '/projetos'],
                             ['categories', 'Categorias', '/categorias'],
-                            ['work-logs', 'Registros', '/registros'],
+                            ['work-logs', 'Tarefas', '/tarefas'],
                             ['reports', 'Relatorios', '/relatorios'],
                         ];
                     @endphp
@@ -38,17 +46,18 @@
                 <div class="px-3 pb-4">
                     <button
                         type="button"
-                        class="theme-toggle flex w-full cursor-default items-center justify-between rounded border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-600"
-                        aria-label="Tema escuro ativo"
+                        class="theme-toggle flex w-full items-center justify-between rounded border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-600"
+                        data-theme-toggle
+                        aria-label="Alternar tema"
                     >
-                        <span>Modo escuro</span>
+                        <span data-theme-label>Modo escuro</span>
                         <span class="theme-dot h-3 w-3 rounded-full"></span>
                     </button>
                 </div>
             </aside>
 
-            <main class="app-main lg:ml-64 lg:flex-1">
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <main class="app-main min-w-0 lg:ml-64 lg:flex-1">
+                <div class="w-full px-4 py-6 sm:px-6 lg:px-8">
                     {{ $slot }}
                 </div>
             </main>

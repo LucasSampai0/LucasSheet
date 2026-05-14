@@ -32,7 +32,7 @@ class WorkReportXlsx
         }
 
         $sheets = [
-            'Registros' => $this->recordsRows(),
+            'Tarefas' => $this->recordsRows(),
             'Resumo por Cliente' => $this->summaryRows($this->report['clients']),
             'Resumo por Projeto' => $this->summaryRows($this->report['projects']),
             'Resumo por Categoria' => $this->summaryRows($this->report['categories']),

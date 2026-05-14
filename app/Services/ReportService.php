@@ -17,7 +17,8 @@ class ReportService
             ->when($filters['date'] ?? null, fn (Builder $query, string $date) => $query->whereDate('work_date', $date))
             ->when($filters['client_id'] ?? null, fn (Builder $query, int|string $id) => $query->where('client_id', $id))
             ->when($filters['project_id'] ?? null, fn (Builder $query, int|string $id) => $query->where('project_id', $id))
-            ->when($filters['category_id'] ?? null, fn (Builder $query, int|string $id) => $query->where('category_id', $id));
+            ->when($filters['category_id'] ?? null, fn (Builder $query, int|string $id) => $query->where('category_id', $id))
+            ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status));
     }
 
     public function totalsBy(Collection $records, string $relation): Collection

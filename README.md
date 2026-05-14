@@ -57,7 +57,7 @@ touch database/database.sqlite
 php artisan migrate --seed
 ```
 
-Os seeders criam apenas categorias base. Clientes, projetos e registros ficam vazios para voce iniciar com seus proprios dados.
+Os seeders criam apenas categorias base. Clientes, projetos e tarefas ficam vazios para voce iniciar com seus proprios dados.
 
 Para limpar uma base que ja recebeu dados ficticios antes, use:
 
@@ -97,7 +97,7 @@ npm run build
 - `/clientes` cadastro, edicao e ativar/desativar clientes.
 - `/projetos` cadastro, edicao e ativar/desativar projetos por cliente.
 - `/categorias` cadastro, edicao, cor e ativar/desativar categorias.
-- `/registros` filtros, criacao manual, editar, excluir, iniciar agora e finalizar tarefa em andamento.
+- `/tarefas` filtros, criacao manual, editar, excluir, iniciar agora e finalizar tarefa em andamento.
 - `/relatorios` filtro por periodo/cliente/projeto/categoria, tabela, resumos e exportacao Excel.
 
 ## Exportar relatorios
@@ -106,7 +106,7 @@ Na tela `/relatorios`, ajuste os filtros e clique em `Exportar Excel`.
 
 A planilha gerada contem:
 
-- Aba `Registros`
+- Aba `Tarefas`
 - Aba `Resumo por Cliente`
 - Aba `Resumo por Projeto`
 - Aba `Resumo por Categoria`
@@ -131,7 +131,7 @@ O arquivo e salvo em `storage/app/private/reports`.
 
 - Duracao calculada automaticamente no model `WorkLog`.
 - Tarefas sem horario final ficam como `Em andamento`.
-- Horario final menor que inicial e recusado pela validacao.
-- Horarios fora de 08:00 a 18:00 geram aviso, mas nao bloqueiam o registro.
-- Filtros por data, cliente, projeto e categoria.
-- Ao iniciar uma nova tarefa, se ja existir uma em andamento, a tela pede confirmacao para finalizar a anterior.
+- Horario final menor que inicial e recusado pela validacao quando a data final for a mesma.
+- Horarios fora de 08:00 a 18:00 geram aviso, mas nao bloqueiam a tarefa.
+- Filtros por data, cliente, projeto, categoria e status.
+- Ao iniciar uma nova tarefa, se ja existir uma em andamento, a tela permite pausar a anterior.
