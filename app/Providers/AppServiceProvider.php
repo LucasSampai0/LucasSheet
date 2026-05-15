@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Http\Middleware\EnsureTokenAuthenticated;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -23,12 +23,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Livewire::addPersistentMiddleware([
-            EnsureTokenAuthenticated::class,
+            Authenticate::class,
         ]);
 
         Livewire::setUpdateRoute(function ($handle, string $path) {
             return Route::post($path, $handle)
-                ->middleware(['web', EnsureTokenAuthenticated::class]);
+                ->middleware(['web', 'auth']);
         });
     }
 }

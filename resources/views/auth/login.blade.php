@@ -26,25 +26,36 @@
 
                 <div>
                     <h1 class="text-2xl font-semibold">Entrar</h1>
-                    <p class="mt-1 text-sm text-zinc-500">Informe o token de acesso configurado para este ambiente.</p>
+                    <p class="mt-1 text-sm text-zinc-500">Use seu e-mail e senha para acessar o sistema.</p>
                 </div>
 
-                @if (! config('lucassheet.access_token') && ! config('lucassheet.access_token_hash'))
-                    <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        Configure `APP_ACCESS_TOKEN` ou `APP_ACCESS_TOKEN_HASH` no `.env` antes de usar o sistema.
-                    </div>
-                @endif
-
                 <label class="mt-5 block">
-                    <span class="text-sm font-medium">Token</span>
+                    <span class="text-sm font-medium">E-mail</span>
                     <input
-                        type="password"
-                        name="token"
-                        autocomplete="current-password"
+                        type="email"
+                        name="email"
+                        value="{{ old('email', 'lucas.bueno@arkus.com.br') }}"
+                        autocomplete="username"
                         autofocus
                         class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-950 focus:outline-none"
                     >
-                    @error('token') <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
+                    @error('email') <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
+                </label>
+
+                <label class="mt-4 block">
+                    <span class="text-sm font-medium">Senha</span>
+                    <input
+                        type="password"
+                        name="password"
+                        autocomplete="current-password"
+                        class="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-950 focus:outline-none"
+                    >
+                    @error('password') <span class="mt-1 block text-xs text-rose-600">{{ $message }}</span> @enderror
+                </label>
+
+                <label class="mt-4 flex items-center gap-2 text-sm text-zinc-500">
+                    <input type="checkbox" name="remember" value="1" class="h-4 w-4 rounded border-zinc-300">
+                    <span>Manter conectado</span>
                 </label>
 
                 <button class="mt-5 w-full rounded bg-zinc-950 px-4 py-2 text-sm font-medium text-white">

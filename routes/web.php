@@ -1,13 +1,18 @@
 <?php
 
-use App\Http\Controllers\AccessTokenController;
+use App\Http\Controllers\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/login', [AccessTokenController::class, 'show'])->name('login');
-Route::post('/login', [AccessTokenController::class, 'store'])->middleware('throttle:5,1')->name('login.store');
-Route::post('/logout', [AccessTokenController::class, 'destroy'])->name('logout');
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('login.store');
 
-Route::middleware('token.auth')->group(function (): void {
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+Route::middleware('auth')->group(function (): void {
     Route::livewire('/', 'dashboard')->name('dashboard');
     Route::livewire('/clientes', 'clients-page')->name('clients');
     Route::livewire('/projetos', 'projects-page')->name('projects');

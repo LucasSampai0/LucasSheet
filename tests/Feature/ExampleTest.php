@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,30 +18,38 @@ class ExampleTest extends TestCase
         $this->withoutVite();
     }
 
-    public function test_dashboard_redirects_to_login_without_token(): void
+    public function test_dashboard_redirects_to_login_without_user(): void
     {
         $response = $this->get('/');
 
         $response->assertRedirect(route('login'));
     }
 
-    public function test_user_can_login_with_configured_token(): void
+    public function test_login_page_loads(): void
     {
-        config(['lucassheet.access_token' => 'secret-token']);
+        $response = $this->get(route('login'));
+
+        $response->assertStatus(200);
+    }
+
+    public function test_user_can_login_with_seeded_credentials(): void
+    {
+        $this->seed(UserSeeder::class);
 
         $response = $this->post(route('login.store'), [
-            'token' => 'secret-token',
+            'email' => 'lucas.bueno@arkus.com.br',
+            'password' => '@Rkus142536',
         ]);
 
         $response->assertRedirect(route('dashboard'));
-        $this->assertTrue(session()->get('access_token_authenticated'));
+        $this->assertAuthenticated();
     }
 
-    public function test_dashboard_loads_after_token_login(): void
+    public function test_dashboard_loads_after_login(): void
     {
-        $response = $this
-            ->withSession(['access_token_authenticated' => true])
-            ->get('/');
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/');
 
         $response->assertStatus(200);
     }

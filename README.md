@@ -37,38 +37,6 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-## Configurar token de acesso
-
-O sistema usa um login simples por token para proteger as telas internas.
-
-No `.env`, configure um token forte:
-
-```env
-APP_ACCESS_TOKEN="troque-por-um-token-longo-e-aleatorio"
-```
-
-Depois acesse `/login` e informe esse token.
-
-Em VPS/producao, prefira guardar apenas o hash SHA-256 do token:
-
-```bash
-php -r "echo hash('sha256', 'seu-token-forte').PHP_EOL;"
-```
-
-No `.env` da VPS:
-
-```env
-APP_ACCESS_TOKEN=
-APP_ACCESS_TOKEN_HASH="hash-gerado"
-```
-
-Se usar cache de configuracao, aplique:
-
-```bash
-php artisan config:clear
-php artisan config:cache
-```
-
 ## Configurar SQLite
 
 O projeto ja usa SQLite por padrao no `.env`:
@@ -83,13 +51,32 @@ Crie o arquivo do banco se ele ainda nao existir:
 touch database/database.sqlite
 ```
 
+## Usuario de acesso
+
+O sistema usa o modelo `User` padrao do Laravel com login por sessao.
+
+O seeder cria o usuario inicial:
+
+```text
+E-mail: lucas.bueno@arkus.com.br
+Senha: @Rkus142536
+```
+
+Esses valores podem ser ajustados no `.env` antes de rodar os seeders:
+
+```env
+LUCASSHEET_DEFAULT_USER_NAME="Lucas Bueno"
+LUCASSHEET_DEFAULT_USER_EMAIL=lucas.bueno@arkus.com.br
+LUCASSHEET_DEFAULT_USER_PASSWORD="@Rkus142536"
+```
+
 ## Migrations e seeders
 
 ```bash
 php artisan migrate --seed
 ```
 
-Os seeders criam apenas categorias base. Clientes, projetos e tarefas ficam vazios para voce iniciar com seus proprios dados.
+Os seeders criam o usuario inicial e categorias base. Clientes, projetos e tarefas ficam vazios para voce iniciar com seus proprios dados.
 
 Para limpar uma base que ja recebeu dados ficticios antes, use:
 
@@ -117,6 +104,8 @@ Acesse:
 http://127.0.0.1:8000
 ```
 
+Ao abrir o sistema, voce sera redirecionado para `/login`.
+
 Tambem e possivel gerar assets de producao com:
 
 ```bash
@@ -131,7 +120,6 @@ npm run build
 - `/categorias` cadastro, edicao, cor e ativar/desativar categorias.
 - `/tarefas` filtros, criacao manual, editar, excluir, iniciar agora e finalizar tarefa em andamento.
 - `/relatorios` filtro por periodo/cliente/projeto/categoria, tabela, resumos e exportacao Excel.
-- `/login` entrada protegida por token.
 
 ## Exportar relatorios
 

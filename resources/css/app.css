@@ -394,6 +394,10 @@ tr:hover td {
         var(--app-bg);
 }
 
+.auth-card {
+    width: min(28rem, 100%);
+}
+
 .app-sidebar {
     background: color-mix(in srgb, var(--app-surface) 94%, var(--accent) 6%);
     backdrop-filter: blur(18px);
@@ -750,10 +754,6 @@ tbody tr:has(.action-menu.is-open) .action-menu-cell {
 
 .task-modal:has(.custom-select.is-open) {
     z-index: 2147483400;
-}
-
-.auth-card {
-    width: min(28rem, 100%);
 }
 
 .text-rose-700 {

@@ -44,6 +44,11 @@
                     @endforeach
                 </nav>
                 <div class="px-3 pb-4">
+                    <div class="mb-3 rounded border border-zinc-200 bg-zinc-50 px-3 py-2">
+                        <span class="block text-xs text-zinc-500">Conectado como</span>
+                        <strong class="block truncate text-sm font-semibold">{{ auth()->user()?->email }}</strong>
+                    </div>
+
                     <button
                         type="button"
                         class="theme-toggle flex w-full items-center justify-between rounded border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-600"
@@ -53,11 +58,12 @@
                         <span data-theme-label>Modo escuro</span>
                         <span class="theme-dot h-3 w-3 rounded-full"></span>
                     </button>
+
                     <form method="POST" action="{{ route('logout') }}" class="mt-2">
                         @csrf
                         <button class="flex w-full items-center justify-between rounded border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium text-zinc-600">
                             <span>Sair</span>
-                            <span class="text-xs text-zinc-500">token</span>
+                            <span class="text-xs text-zinc-500">sessao</span>
                         </button>
                     </form>
                 </div>
