@@ -132,11 +132,12 @@ class WorkLog extends Model
         $endedDate ??= now()->toDateString();
         $this->ensureSessionHistoryExists();
         $session = $this->activeSession()->first();
+        [$pauseEndedAt, $pauseEndedDate] = $this->pauseEndpoint($endedAt, $endedDate);
 
         if ($session) {
             $session->update([
-                'ended_at' => $endedAt,
-                'ended_date' => $endedDate,
+                'ended_at' => $pauseEndedAt,
+                'ended_date' => $pauseEndedDate,
             ]);
         }
 
@@ -144,8 +145,8 @@ class WorkLog extends Model
             $this->sessions()->create([
                 'work_date' => $this->work_date?->toDateString() ?? now()->toDateString(),
                 'started_at' => $this->started_at,
-                'ended_at' => $endedAt,
-                'ended_date' => $endedDate,
+                'ended_at' => $pauseEndedAt,
+                'ended_date' => $pauseEndedDate,
             ]);
         }
 
@@ -221,6 +222,18 @@ class WorkLog extends Model
             'ended_at' => $this->ended_at,
             'ended_date' => $this->ended_date?->toDateString() ?? $this->work_date?->toDateString() ?? now()->toDateString(),
         ]);
+    }
+
+    private function pauseEndpoint(string $endedAt, string $endedDate): array
+    {
+        if ($this->status !== self::STATUS_IN_PROGRESS && filled($this->ended_at)) {
+            return [
+                substr((string) $this->ended_at, 0, 5),
+                $this->ended_date?->toDateString() ?? $this->work_date?->toDateString() ?? $endedDate,
+            ];
+        }
+
+        return [$endedAt, $endedDate];
     }
 
     public function formattedDuration(): string
