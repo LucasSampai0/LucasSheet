@@ -37,6 +37,38 @@ cp .env.example .env
 php artisan key:generate
 ```
 
+## Configurar token de acesso
+
+O sistema usa um login simples por token para proteger as telas internas.
+
+No `.env`, configure um token forte:
+
+```env
+APP_ACCESS_TOKEN="troque-por-um-token-longo-e-aleatorio"
+```
+
+Depois acesse `/login` e informe esse token.
+
+Em VPS/producao, prefira guardar apenas o hash SHA-256 do token:
+
+```bash
+php -r "echo hash('sha256', 'seu-token-forte').PHP_EOL;"
+```
+
+No `.env` da VPS:
+
+```env
+APP_ACCESS_TOKEN=
+APP_ACCESS_TOKEN_HASH="hash-gerado"
+```
+
+Se usar cache de configuracao, aplique:
+
+```bash
+php artisan config:clear
+php artisan config:cache
+```
+
 ## Configurar SQLite
 
 O projeto ja usa SQLite por padrao no `.env`:
@@ -99,6 +131,7 @@ npm run build
 - `/categorias` cadastro, edicao, cor e ativar/desativar categorias.
 - `/tarefas` filtros, criacao manual, editar, excluir, iniciar agora e finalizar tarefa em andamento.
 - `/relatorios` filtro por periodo/cliente/projeto/categoria, tabela, resumos e exportacao Excel.
+- `/login` entrada protegida por token.
 
 ## Exportar relatorios
 

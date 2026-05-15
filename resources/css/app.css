@@ -752,6 +752,10 @@ tbody tr:has(.action-menu.is-open) .action-menu-cell {
     z-index: 2147483400;
 }
 
+.auth-card {
+    width: min(28rem, 100%);
+}
+
 .text-rose-700 {
     color: #e11d48;
 }
