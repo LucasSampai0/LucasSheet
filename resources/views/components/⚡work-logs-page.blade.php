@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\WorkLog;
 use App\Services\ReportService;
 use App\Services\WorkDuration;
+use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -285,6 +286,7 @@ new class extends Component
             'category_id' => $this->filter_category_id,
             'status' => $this->filter_status,
         ])
+            ->with(['client', 'project', 'category', 'sessions'])
             ->latest('work_date')
             ->latest('started_at')
             ->limit(80)
@@ -358,11 +360,150 @@ new class extends Component
 
     public function setViewMode(string $mode): void
     {
-        if (! in_array($mode, ['table', 'board'], true)) {
+        if (! in_array($mode, ['table', 'board', 'gantt'], true)) {
             return;
         }
 
         $this->viewMode = $mode;
+    }
+
+    public function ganttData($records): array
+    {
+        $segments = collect();
+
+        foreach ($records as $record) {
+            $sources = $record->sessions->isNotEmpty()
+                ? $record->sessions->sortBy([['work_date', 'asc'], ['started_at', 'asc']])->values()
+                : collect([$record]);
+
+            foreach ($sources as $index => $source) {
+                $startDate = $source->work_date?->toDateString() ?? $record->work_date->toDateString();
+                $startTime = substr((string) $source->started_at, 0, 5);
+
+                if (blank($startTime)) {
+                    continue;
+                }
+
+                $endTime = filled($source->ended_at) ? substr((string) $source->ended_at, 0, 5) : null;
+                $endDate = $source->ended_date?->toDateString() ?? $startDate;
+
+                if (blank($endTime)) {
+                    if ($record->status !== WorkLog::STATUS_IN_PROGRESS) {
+                        continue;
+                    }
+
+                    $endTime = now()->format('H:i');
+                    $endDate = now()->toDateString();
+                }
+
+                $start = Carbon::parse($startDate.' '.$startTime);
+                $end = Carbon::parse($endDate.' '.$endTime);
+
+                if ($end->lt($start)) {
+                    continue;
+                }
+
+                $this->splitGanttSegment($segments, $record, $start, $end, $index);
+            }
+        }
+
+        if ($segments->isEmpty()) {
+            return [
+                'range_start' => 8 * 60,
+                'range_end' => 18 * 60,
+                'labels' => $this->ganttLabels(8 * 60, 18 * 60),
+                'days' => [],
+            ];
+        }
+
+        $rangeStart = max(0, (int) floor(min(8 * 60, $segments->min('start_minutes')) / 60) * 60);
+        $rangeEnd = min(24 * 60, (int) ceil(max(18 * 60, $segments->max('end_minutes')) / 60) * 60);
+        $rangeEnd = max($rangeEnd, $rangeStart + 60);
+
+        $days = $segments
+            ->groupBy('day')
+            ->sortKeysDesc()
+            ->map(function ($items, string $day) use ($rangeStart, $rangeEnd) {
+                return [
+                    'day' => $day,
+                    'label' => Carbon::parse($day)->format('d/m/Y'),
+                    'weekday' => ucfirst(Carbon::parse($day)->translatedFormat('l')),
+                    'items' => $items
+                        ->sortBy('start_minutes')
+                        ->values()
+                        ->map(function (array $item) use ($rangeStart, $rangeEnd) {
+                            $range = max(1, $rangeEnd - $rangeStart);
+                            $left = max(0, (($item['start_minutes'] - $rangeStart) / $range) * 100);
+                            $width = max(1.8, (($item['end_minutes'] - $item['start_minutes']) / $range) * 100);
+
+                            return array_merge($item, [
+                                'left' => min(100, $left),
+                                'width' => min(100 - min(100, $left), $width),
+                            ]);
+                        })
+                        ->all(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'range_start' => $rangeStart,
+            'range_end' => $rangeEnd,
+            'labels' => $this->ganttLabels($rangeStart, $rangeEnd),
+            'days' => $days,
+        ];
+    }
+
+    private function splitGanttSegment($segments, WorkLog $record, Carbon $start, Carbon $end, int $index): void
+    {
+        $cursor = $start->copy();
+
+        while ($cursor->toDateString() <= $end->toDateString()) {
+            $isFirstDay = $cursor->isSameDay($start);
+            $isLastDay = $cursor->isSameDay($end);
+            $segmentStart = $isFirstDay ? $start->copy() : $cursor->copy()->startOfDay();
+            $segmentEnd = $isLastDay ? $end->copy() : $cursor->copy()->endOfDay();
+
+            $startMinutes = ($segmentStart->hour * 60) + $segmentStart->minute;
+            $endMinutes = ($segmentEnd->hour * 60) + $segmentEnd->minute;
+
+            if ($endMinutes > $startMinutes) {
+                $segments->push([
+                    'id' => $record->id,
+                    'key' => $record->id.'-'.$index.'-'.$segmentStart->toDateString(),
+                    'day' => $segmentStart->toDateString(),
+                    'title' => $record->title,
+                    'client' => $record->client->name,
+                    'project' => $record->project?->name ?? 'Sem projeto',
+                    'category' => $record->category?->name ?? 'Sem categoria',
+                    'color' => $record->category?->color ?: $this->statusColor($record->status),
+                    'status' => $record->statusLabel(),
+                    'start' => $segmentStart->format('H:i'),
+                    'end' => $segmentEnd->format('H:i'),
+                    'start_minutes' => $startMinutes,
+                    'end_minutes' => $endMinutes,
+                    'duration' => WorkDuration::formatMinutes($endMinutes - $startMinutes),
+                ]);
+            }
+
+            $cursor->addDay()->startOfDay();
+        }
+    }
+
+    private function ganttLabels(int $rangeStart, int $rangeEnd): array
+    {
+        $labels = [];
+        $range = max(1, $rangeEnd - $rangeStart);
+
+        for ($minute = $rangeStart; $minute <= $rangeEnd; $minute += 60) {
+            $labels[] = [
+                'label' => $minute === 24 * 60 ? '24:00' : sprintf('%02d:00', intdiv($minute, 60) % 24),
+                'left' => (($minute - $rangeStart) / $range) * 100,
+            ];
+        }
+
+        return $labels;
     }
 
     private function ensureProjectBelongsToClient(array $data): void
@@ -560,6 +701,7 @@ new class extends Component
         <div class="period-segmented" role="group" aria-label="Alternar visualizacao das tarefas">
             <button type="button" wire:click="setViewMode('table')" class="{{ $viewMode === 'table' ? 'is-active' : '' }}" aria-pressed="{{ $viewMode === 'table' ? 'true' : 'false' }}">Tabela</button>
             <button type="button" wire:click="setViewMode('board')" class="{{ $viewMode === 'board' ? 'is-active' : '' }}" aria-pressed="{{ $viewMode === 'board' ? 'true' : 'false' }}">Quadro</button>
+            <button type="button" wire:click="setViewMode('gantt')" class="{{ $viewMode === 'gantt' ? 'is-active' : '' }}" aria-pressed="{{ $viewMode === 'gantt' ? 'true' : 'false' }}">Gantt</button>
         </div>
     </div>
 
@@ -631,7 +773,7 @@ new class extends Component
                 </table>
             </div>
         </div>
-    @else
+    @elseif ($viewMode === 'board')
         <div class="status-board">
             @foreach ($statusColumns as $status => $label)
                 @php($items = $recordsByStatus->get($status, collect()))
@@ -691,6 +833,59 @@ new class extends Component
                     </div>
                 </div>
             @endforeach
+        </div>
+    @else
+        @php($gantt = $this->ganttData($records))
+        <div class="gantt-panel rounded-lg border border-zinc-200 bg-white">
+            <div class="gantt-toolbar">
+                <div>
+                    <h2 class="text-sm font-semibold">Linha do tempo das tarefas</h2>
+                    <p class="mt-1 text-xs text-zinc-500">As barras representam os trechos trabalhados por data e horario.</p>
+                </div>
+                <span class="text-xs font-medium text-zinc-500">{{ $records->count() }} tarefas</span>
+            </div>
+
+            @if (empty($gantt['days']))
+                <p class="px-5 py-8 text-center text-sm text-zinc-500">Nenhuma tarefa com periodo definido para exibir no Gantt.</p>
+            @else
+                <div class="gantt-scroll">
+                    <div class="gantt-grid" style="--gantt-step: {{ 100 / max(1, count($gantt['labels']) - 1) }}%">
+                        <div class="gantt-scale">
+                            <div class="gantt-scale-spacer"></div>
+                            <div class="gantt-scale-track">
+                                @foreach ($gantt['labels'] as $label)
+                                    <span style="left: {{ $label['left'] }}%">{{ $label['label'] }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        @foreach ($gantt['days'] as $day)
+                            <div class="gantt-day" wire:key="gantt-day-{{ $day['day'] }}">
+                                <div class="gantt-day-label">
+                                    <strong>{{ $day['label'] }}</strong>
+                                    <span>{{ $day['weekday'] }}</span>
+                                </div>
+                                <div class="gantt-track">
+                                    @foreach ($day['items'] as $item)
+                                        <button
+                                            type="button"
+                                            wire:click="edit({{ $item['id'] }})"
+                                            class="gantt-bar"
+                                            wire:key="gantt-item-{{ $item['key'] }}"
+                                            style="--bar-left: {{ $item['left'] }}%; --bar-width: {{ $item['width'] }}%; --bar-color: {{ $item['color'] }}"
+                                            title="{{ $item['title'] }} · {{ $item['start'] }}-{{ $item['end'] }}"
+                                        >
+                                            <span>{{ $item['title'] }}</span>
+                                            <small>{{ $item['start'] }}-{{ $item['end'] }} · {{ $item['duration'] }}</small>
+                                            <em>{{ $item['client'] }} · {{ $item['project'] }}</em>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     @endif
 </section>

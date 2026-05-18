@@ -1027,6 +1027,154 @@ tbody tr td[colspan] {
     font-size: .7rem;
 }
 
+.gantt-panel {
+    overflow: hidden;
+}
+
+.gantt-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--app-border);
+    padding: 1rem 1.25rem;
+}
+
+.gantt-scroll {
+    overflow-x: auto;
+}
+
+.gantt-grid {
+    min-width: 58rem;
+}
+
+.gantt-scale,
+.gantt-day {
+    display: grid;
+    grid-template-columns: 10rem minmax(44rem, 1fr);
+}
+
+.gantt-scale {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 1px solid var(--app-border);
+    background: var(--app-surface);
+}
+
+.gantt-scale-spacer {
+    border-right: 1px solid var(--app-border);
+}
+
+.gantt-scale-track {
+    position: relative;
+    min-height: 2.4rem;
+    background:
+        repeating-linear-gradient(
+            to right,
+            color-mix(in srgb, var(--app-border) 68%, transparent) 0 1px,
+            transparent 1px var(--gantt-step)
+        );
+}
+
+.gantt-scale-track span {
+    position: absolute;
+    top: .75rem;
+    transform: translateX(-50%);
+    color: var(--app-muted);
+    font-size: .68rem;
+    font-weight: 800;
+}
+
+.gantt-day {
+    border-bottom: 1px solid var(--app-border);
+}
+
+.gantt-day:last-child {
+    border-bottom: 0;
+}
+
+.gantt-day-label {
+    display: grid;
+    align-content: center;
+    gap: .15rem;
+    border-right: 1px solid var(--app-border);
+    background: color-mix(in srgb, var(--app-surface-muted) 56%, transparent);
+    padding: .85rem 1rem;
+}
+
+.gantt-day-label strong {
+    color: var(--app-text);
+    font-size: .82rem;
+}
+
+.gantt-day-label span {
+    color: var(--app-muted);
+    font-size: .7rem;
+    text-transform: capitalize;
+}
+
+.gantt-track {
+    position: relative;
+    display: grid;
+    gap: .48rem;
+    min-height: 4.35rem;
+    padding: .75rem .85rem;
+    background:
+        repeating-linear-gradient(
+            to right,
+            color-mix(in srgb, var(--app-border) 58%, transparent) 0 1px,
+            transparent 1px var(--gantt-step)
+        );
+}
+
+.gantt-bar {
+    position: relative;
+    left: var(--bar-left);
+    display: grid;
+    width: var(--bar-width);
+    min-width: 5.75rem;
+    border: 1px solid color-mix(in srgb, var(--bar-color) 46%, var(--app-border));
+    border-left: .35rem solid var(--bar-color);
+    border-radius: .8rem;
+    background: color-mix(in srgb, var(--bar-color) 12%, var(--app-surface));
+    color: var(--app-text);
+    padding: .45rem .6rem;
+    text-align: left;
+}
+
+.gantt-bar:hover,
+.gantt-bar:focus-visible {
+    border-color: var(--bar-color);
+    outline: none;
+}
+
+.gantt-bar span,
+.gantt-bar small,
+.gantt-bar em {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gantt-bar span {
+    font-size: .76rem;
+    font-style: normal;
+    font-weight: 750;
+}
+
+.gantt-bar small {
+    color: var(--app-muted);
+    font-size: .66rem;
+    font-weight: 700;
+}
+
+.gantt-bar em {
+    color: var(--app-soft);
+    font-size: .64rem;
+    font-style: normal;
+}
+
 .dashboard-ring {
     display: grid;
     width: 4.25rem;
