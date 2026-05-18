@@ -457,6 +457,12 @@ new class extends Component
 
     private function splitGanttSegment($segments, WorkLog $record, Carbon $start, Carbon $end, int $index): void
     {
+        if ($start->isSameDay($end)) {
+            $this->pushGanttSegment($segments, $record, $start, $end, $index);
+
+            return;
+        }
+
         $cursor = $start->copy();
 
         while ($cursor->toDateString() <= $end->toDateString()) {
@@ -465,30 +471,56 @@ new class extends Component
             $segmentStart = $isFirstDay ? $start->copy() : $cursor->copy()->startOfDay();
             $segmentEnd = $isLastDay ? $end->copy() : $cursor->copy()->endOfDay();
 
-            $startMinutes = ($segmentStart->hour * 60) + $segmentStart->minute;
-            $endMinutes = ($segmentEnd->hour * 60) + $segmentEnd->minute;
+            foreach ($this->ganttBusinessWindows($cursor) as [$windowStart, $windowEnd]) {
+                $clippedStart = $segmentStart->max($windowStart);
+                $clippedEnd = $segmentEnd->min($windowEnd);
 
-            if ($endMinutes > $startMinutes) {
-                $segments->push([
-                    'id' => $record->id,
-                    'key' => $record->id.'-'.$index.'-'.$segmentStart->toDateString(),
-                    'day' => $segmentStart->toDateString(),
-                    'title' => $record->title,
-                    'client' => $record->client->name,
-                    'project' => $record->project?->name ?? 'Sem projeto',
-                    'category' => $record->category?->name ?? 'Sem categoria',
-                    'color' => $record->category?->color ?: $this->statusColor($record->status),
-                    'status' => $record->statusLabel(),
-                    'start' => $segmentStart->format('H:i'),
-                    'end' => $segmentEnd->format('H:i'),
-                    'start_minutes' => $startMinutes,
-                    'end_minutes' => $endMinutes,
-                    'duration' => WorkDuration::formatMinutes($endMinutes - $startMinutes),
-                ]);
+                $this->pushGanttSegment($segments, $record, $clippedStart, $clippedEnd, $index);
             }
 
             $cursor->addDay()->startOfDay();
         }
+    }
+
+    private function pushGanttSegment($segments, WorkLog $record, Carbon $segmentStart, Carbon $segmentEnd, int $index): void
+    {
+        $startMinutes = ($segmentStart->hour * 60) + $segmentStart->minute;
+        $endMinutes = ($segmentEnd->hour * 60) + $segmentEnd->minute;
+
+        if ($endMinutes <= $startMinutes) {
+            return;
+        }
+
+        $segments->push([
+            'id' => $record->id,
+            'key' => $record->id.'-'.$index.'-'.$segmentStart->toDateString().'-'.$segmentStart->format('Hi'),
+            'day' => $segmentStart->toDateString(),
+            'title' => $record->title,
+            'client' => $record->client->name,
+            'project' => $record->project?->name ?? 'Sem projeto',
+            'category' => $record->category?->name ?? 'Sem categoria',
+            'color' => $record->category?->color ?: $this->statusColor($record->status),
+            'status' => $record->statusLabel(),
+            'start' => $segmentStart->format('H:i'),
+            'end' => $segmentEnd->format('H:i'),
+            'start_minutes' => $startMinutes,
+            'end_minutes' => $endMinutes,
+            'duration' => WorkDuration::formatMinutes($endMinutes - $startMinutes),
+        ]);
+    }
+
+    private function ganttBusinessWindows(Carbon $day): array
+    {
+        return [
+            [
+                $day->copy()->setTime(8, 0),
+                $day->copy()->setTime(12, 0),
+            ],
+            [
+                $day->copy()->setTime(13, 12),
+                $day->copy()->setTime(18, 0),
+            ],
+        ];
     }
 
     private function ganttLabels(int $rangeStart, int $rangeEnd): array
