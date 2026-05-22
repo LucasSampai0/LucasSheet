@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Services\WorkDuration;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use RuntimeException;
 use ZipArchive;
 
@@ -24,7 +25,7 @@ class WorkReportXlsx
             throw new RuntimeException('A extensao php-zip e necessaria para exportar XLSX.');
         }
 
-        $path = tempnam(sys_get_temp_dir(), 'work-report-');
+        $path = $this->temporaryPath();
         $zip = new ZipArchive();
 
         if ($zip->open($path, ZipArchive::OVERWRITE) !== true) {
@@ -53,6 +54,25 @@ class WorkReportXlsx
         @unlink($path);
 
         return $contents === false ? '' : $contents;
+    }
+
+    private function temporaryPath(): string
+    {
+        $directory = storage_path('app/private/reports/tmp');
+
+        File::ensureDirectoryExists($directory, 0775, true);
+
+        if (! is_writable($directory)) {
+            throw new RuntimeException('O diretorio temporario de relatorios nao tem permissao de escrita: '.$directory);
+        }
+
+        $path = tempnam($directory, 'work-report-');
+
+        if ($path === false) {
+            throw new RuntimeException('Nao foi possivel criar o arquivo temporario do relatorio.');
+        }
+
+        return $path;
     }
 
     private function recordsRows(): array
